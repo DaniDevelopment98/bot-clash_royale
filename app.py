@@ -6,9 +6,10 @@ from datetime import datetime, timezone
 
 app = Flask(__name__)
 
-TOKEN = os.environ.get("TOKEN")
+# FIX: Acepta TOKEN o CLASH_ROYALE_TOKEN
+TOKEN = os.environ.get("TOKEN") or os.environ.get("CLASH_ROYALE_TOKEN")
 BASE_URL = "https://api.clashroyale.com/v1"
-CLAN_DEFAULT = os.environ.get("CLAN_DEFAULT", "#GJCP9C8Y")
+CLAN_DEFAULT = os.environ.get("CLAN_DEFAULT") or os.environ.get("CLAN_TAG") or "#6JC9C8Y"
 
 session = requests.Session()
 if TOKEN:
@@ -36,6 +37,9 @@ def api_fast(endpoint):
         data = r.json()
         if r.status_code == 200:
             set_cache(endpoint, data)
+        else:
+            # Para ver el error real de Supercell
+            data["status_code"] = r.status_code
         return data
     except Exception as e:
         return {"error": str(e)}
@@ -47,7 +51,15 @@ def get_tag(tag_param):
 
 @app.route("/")
 def home():
-    return jsonify({"status": "Bot Royale PRO V4 TURBO - Cache 90s", "clan_default": CLAN_DEFAULT})
+    return jsonify({"status": "Bot Royale PRO V4 TURBO - Cache 90s", "clan_default": CLAN_DEFAULT, "token_ok": bool(TOKEN)})
+
+@app.route("/ip")
+def ip_route():
+    try:
+        ip = requests.get("https://api.ipify.org", timeout=5).text
+        return jsonify({"ip_railway": ip})
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 @app.route("/perfil/<tag>")
 def perfil(tag):
